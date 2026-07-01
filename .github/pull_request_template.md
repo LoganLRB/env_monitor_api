@@ -1,25 +1,18 @@
-## Summary
-<!-- What does this PR do and why? -->
+## Description
 
+[Provide a clear and concise description of the changes made in this pull request.]
 
-## Type of change
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Refactor
-- [ ] Config / dependency update
-- [ ] Documentation
+## Related Issue(s)
 
-## Changes
-<!-- Bullet list of what changed -->
+[Link or reference any relevant issues or tasks addressed by this PR, e.g., #123.]
 
+## How Has This Been Tested?
 
-## Test plan
-<!-- How was this tested? Which cases were exercised? -->
-- [ ] `python -m unittest discover tests` passes locally
-- [ ] Manually verified affected endpoints
-
+[Describe the testing performed to ensure the changes work as expected.]
 
 ## Checklist
-- [ ] No secrets or credentials in code
-- [ ] `.env.example` updated if new env vars were added
-- [ ] README updated if endpoints, config, or setup steps changed
+
+- [ ] My code follows the project's style guidelines.
+- [ ] I have updated the documentation (if applicable).
+- [ ] Changes have been thoroughly tested.
+- [ ] New and existing unit tests pass locally with my changes.
