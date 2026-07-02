@@ -81,21 +81,20 @@ def get_all_sensors() -> list[dict]:
 
 
 def generate_bulk_readings(
-    hours: int = 24,
+    start: datetime,
+    end: datetime,
     interval_seconds: int = 300,
     zone_id: str | None = None,
     fire_probability: float = 0.05,
 ) -> list[SensorReading]:
     sensors = [s for s in _SENSOR_CATALOG if zone_id is None or s["zone_id"] == zone_id]
-    now = datetime.now(timezone.utc)
-    start = now - timedelta(hours=hours)
 
     # Per-zone fire state; autocorrelated so events persist across intervals.
     zone_fire_state: dict[str, bool] = {z: False for z in _ZONES}
 
     readings: list[SensorReading] = []
     ts = start
-    while ts <= now:
+    while ts <= end:
         for zone in _ZONES:
             if zone_fire_state[zone]:
                 zone_fire_state[zone] = random.random() > 0.20  # 20% chance of ending
