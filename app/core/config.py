@@ -8,7 +8,6 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     stream_interval_seconds: float = 5.0
     wildfire_event_probability: float = 0.05
-    bulk_max_hours: int = 72
 
 
 settings = Settings()
