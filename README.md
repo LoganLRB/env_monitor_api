@@ -36,11 +36,11 @@ GET /v1/sensors/stream               SSE live stream
 
 | Param | Default | Range | Description |
 |---|---|---|---|
-| `start` | — | UTC ISO 8601 | Window start. Defaults to `hours` ago. |
-| `end` | — | UTC ISO 8601 | Window end. Defaults to now. |
-| `hours` | 24 | 1–8760 | Hours of history when `start` is not provided |
-| `interval_seconds` | 300 | 60–3600 | Seconds between readings per sensor |
-| `zone_id` | — | zone-a…zone-d | Filter to one zone |
+| `start` | (none) | UTC ISO 8601 | Window start. Defaults to `hours` ago. |
+| `end` | (none) | UTC ISO 8601 | Window end. Defaults to now. |
+| `hours` | 24 | 1-8760 | Hours of history when `start` is not provided |
+| `interval_seconds` | 300 | 60-3600 | Seconds between readings per sensor |
+| `zone_id` | (none) | zone-a...zone-d | Filter to one zone |
 
 ### SSE event format
 
