@@ -97,8 +97,8 @@ class TestBulkReadings(unittest.IsolatedAsyncioTestCase):
         response = await self.client.get("/v1/sensors/readings/bulk")
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data["hours"], 24)
         self.assertEqual(data["interval_seconds"], 300)
+        self.assertEqual(data["sensor_count"], 12)
         self.assertGreater(data["reading_count"], 0)
         self.assertEqual(len(data["readings"]), data["reading_count"])
 
@@ -110,7 +110,7 @@ class TestBulkReadings(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(data["sensor_count"], 3)
 
     async def test_hours_too_large_rejected(self):
-        response = await self.client.get("/v1/sensors/readings/bulk?hours=100")
+        response = await self.client.get("/v1/sensors/readings/bulk?hours=8761")
         self.assertEqual(response.status_code, 422)
 
     async def test_interval_too_small_rejected(self):
@@ -122,6 +122,77 @@ class TestBulkReadings(unittest.IsolatedAsyncioTestCase):
         data = response.json()
         # 1 hour at 60-min intervals = 2 time slots (start and end), 12 sensors each
         self.assertGreaterEqual(data["reading_count"], 12)
+
+
+class TestBulkReadingsDateRange(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.client = AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
+
+    async def asyncTearDown(self):
+        await self.client.aclose()
+
+    async def test_explicit_start_and_end_reflected_in_response(self):
+        response = await self.client.get(
+            "/v1/sensors/readings/bulk"
+            "?start=2026-07-01T00:00:00Z&end=2026-07-01T06:00:00Z&interval_seconds=3600"
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("2026-07-01T00:00:00", data["start"])
+        self.assertIn("2026-07-01T06:00:00", data["end"])
+
+    async def test_explicit_start_and_end_reading_count(self):
+        # 6-hour window at 1-hour intervals: timestamps 00:00..06:00 inclusive = 7 slots × 12 sensors
+        response = await self.client.get(
+            "/v1/sensors/readings/bulk"
+            "?start=2026-07-01T00:00:00Z&end=2026-07-01T06:00:00Z&interval_seconds=3600"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["reading_count"], 7 * 12)
+
+    async def test_start_takes_precedence_over_hours(self):
+        # hours=24 should be ignored when start is provided
+        with_hours = await self.client.get(
+            "/v1/sensors/readings/bulk"
+            "?start=2026-07-01T00:00:00Z&end=2026-07-01T01:00:00Z&hours=24&interval_seconds=3600"
+        )
+        without_hours = await self.client.get(
+            "/v1/sensors/readings/bulk"
+            "?start=2026-07-01T00:00:00Z&end=2026-07-01T01:00:00Z&interval_seconds=3600"
+        )
+        self.assertEqual(with_hours.status_code, 200)
+        self.assertEqual(
+            with_hours.json()["reading_count"],
+            without_hours.json()["reading_count"],
+        )
+
+    async def test_end_without_start_falls_back_to_hours(self):
+        # Providing only end: start should be end minus 24 hours (default hours=24)
+        response = await self.client.get(
+            "/v1/sensors/readings/bulk?end=2026-07-01T12:00:00Z&interval_seconds=3600"
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("2026-07-01T12:00:00", data["end"])
+        self.assertIn("2026-06-30T12:00:00", data["start"])
+
+    async def test_naive_datetime_treated_as_utc(self):
+        response = await self.client.get(
+            "/v1/sensors/readings/bulk"
+            "?start=2026-07-01T00:00:00&end=2026-07-01T01:00:00&interval_seconds=3600"
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertGreater(data["reading_count"], 0)
+        self.assertIn("2026-07-01T00:00:00", data["start"])
+
+    async def test_start_after_end_returns_empty_readings(self):
+        response = await self.client.get(
+            "/v1/sensors/readings/bulk"
+            "?start=2026-07-01T06:00:00Z&end=2026-07-01T00:00:00Z&interval_seconds=3600"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["reading_count"], 0)
 
 
 if __name__ == "__main__":
