@@ -30,7 +30,7 @@ async def current_readings():
 @router.get(
     "/readings/bulk",
     response_model=BulkReadingsResponse,
-    summary="Historical bulk readings — consumed by env_monitor_batch",
+    summary="Historical bulk readings (consumed by env_monitor_batch)",
 )
 async def bulk_readings(
     start: Annotated[datetime | None, Query(description="Window start (UTC ISO 8601). Defaults to `hours` ago.")] = None,
@@ -41,7 +41,7 @@ async def bulk_readings(
 ):
     now = datetime.now(timezone.utc)
     resolved_end = (end.replace(tzinfo=timezone.utc) if end.tzinfo is None else end) if end else now
-    resolved_start = (start.replace(tzinfo=timezone.utc) if start.tzinfo is None else start) if start else (now - timedelta(hours=hours))
+    resolved_start = (start.replace(tzinfo=timezone.utc) if start.tzinfo is None else start) if start else (resolved_end - timedelta(hours=hours))
 
     readings = simulator.generate_bulk_readings(
         start=resolved_start,
@@ -80,7 +80,7 @@ async def _event_stream():
         await asyncio.sleep(settings.stream_interval_seconds)
 
 
-@router.get("/stream", summary="SSE stream of live sensor readings — consumed by env_monitor_streaming")
+@router.get("/stream", summary="SSE stream of live sensor readings (consumed by env_monitor_streaming)")
 async def stream_readings():
     return StreamingResponse(
         _event_stream(),
