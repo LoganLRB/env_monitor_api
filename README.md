@@ -36,9 +36,11 @@ GET /v1/sensors/stream               SSE live stream
 
 | Param | Default | Range | Description |
 |---|---|---|---|
-| `hours` | 24 | 1–72 | Hours of history to generate |
-| `interval_seconds` | 300 | 60–3600 | Seconds between readings per sensor |
-| `zone_id` | — | zone-a…zone-d | Filter to one zone |
+| `start` | (none) | UTC ISO 8601 | Window start. Defaults to `hours` ago. |
+| `end` | (none) | UTC ISO 8601 | Window end. Defaults to now. |
+| `hours` | 24 | 1-8760 | Hours of history when `start` is not provided |
+| `interval_seconds` | 300 | 60-3600 | Seconds between readings per sensor |
+| `zone_id` | (none) | zone-a...zone-d | Filter to one zone |
 
 ### SSE event format
 
@@ -75,7 +77,6 @@ docker compose up --build
 |---|---|---|
 | `STREAM_INTERVAL_SECONDS` | `5.0` | Seconds between SSE emission cycles |
 | `WILDFIRE_EVENT_PROBABILITY` | `0.05` | Per-zone probability of a fire event starting each cycle |
-| `BULK_MAX_HOURS` | `72` | Maximum hours allowed for bulk requests |
 
 ## Tests
 

@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Query
@@ -30,15 +30,22 @@ async def current_readings():
 @router.get(
     "/readings/bulk",
     response_model=BulkReadingsResponse,
-    summary="Historical bulk readings — consumed by env_monitor_batch",
+    summary="Historical bulk readings (consumed by env_monitor_batch)",
 )
 async def bulk_readings(
-    hours: Annotated[int, Query(ge=1, le=72, description="Hours of history to generate")] = 24,
+    start: Annotated[datetime | None, Query(description="Window start (UTC ISO 8601). Defaults to `hours` ago.")] = None,
+    end: Annotated[datetime | None, Query(description="Window end (UTC ISO 8601). Defaults to now.")] = None,
+    hours: Annotated[int, Query(ge=1, le=8760, description="Hours of history when start is not provided")] = 24,
     interval_seconds: Annotated[int, Query(ge=60, le=3600, description="Seconds between readings per sensor")] = 300,
     zone_id: Annotated[str | None, Query(description="Filter to a single zone (e.g. zone-a)")] = None,
 ):
+    now = datetime.now(timezone.utc)
+    resolved_end = (end.replace(tzinfo=timezone.utc) if end.tzinfo is None else end) if end else now
+    resolved_start = (start.replace(tzinfo=timezone.utc) if start.tzinfo is None else start) if start else (resolved_end - timedelta(hours=hours))
+
     readings = simulator.generate_bulk_readings(
-        hours=hours,
+        start=resolved_start,
+        end=resolved_end,
         interval_seconds=interval_seconds,
         zone_id=zone_id,
         fire_probability=settings.wildfire_event_probability,
@@ -46,7 +53,8 @@ async def bulk_readings(
     return BulkReadingsResponse(
         sensor_count=len({r.sensor_id for r in readings}),
         reading_count=len(readings),
-        hours=hours,
+        start=resolved_start,
+        end=resolved_end,
         interval_seconds=interval_seconds,
         readings=readings,
     )
@@ -72,7 +80,7 @@ async def _event_stream():
         await asyncio.sleep(settings.stream_interval_seconds)
 
 
-@router.get("/stream", summary="SSE stream of live sensor readings — consumed by env_monitor_streaming")
+@router.get("/stream", summary="SSE stream of live sensor readings (consumed by env_monitor_streaming)")
 async def stream_readings():
     return StreamingResponse(
         _event_stream(),

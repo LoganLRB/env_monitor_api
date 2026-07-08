@@ -1,0 +1,7 @@
+env_monitor_api/
+tests/
+.git/
+.env
+.gitignore
+*.pyc
+__pycache__/

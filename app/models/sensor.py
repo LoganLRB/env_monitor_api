@@ -31,6 +31,7 @@ class SensorMeta(BaseModel):
 class BulkReadingsResponse(BaseModel):
     sensor_count: int
     reading_count: int
-    hours: int
+    start: datetime
+    end: datetime
     interval_seconds: int
     readings: list[SensorReading]

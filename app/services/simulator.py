@@ -6,19 +6,19 @@ from typing import Literal
 from app.models.sensor import SensorReading
 
 _SENSOR_CATALOG: list[dict] = [
-    # Zone A — Northern Forest Ridge
+    # Zone A: Northern Forest Ridge
     {"sensor_id": "SNS-001", "zone_id": "zone-a", "zone_name": "Northern Forest Ridge", "latitude": 37.5123, "longitude": -119.5341},
     {"sensor_id": "SNS-002", "zone_id": "zone-a", "zone_name": "Northern Forest Ridge", "latitude": 37.5187, "longitude": -119.5218},
     {"sensor_id": "SNS-003", "zone_id": "zone-a", "zone_name": "Northern Forest Ridge", "latitude": 37.5051, "longitude": -119.5482},
-    # Zone B — Southern Valley Floor
+    # Zone B: Southern Valley Floor
     {"sensor_id": "SNS-004", "zone_id": "zone-b", "zone_name": "Southern Valley Floor", "latitude": 37.3124, "longitude": -119.2987},
     {"sensor_id": "SNS-005", "zone_id": "zone-b", "zone_name": "Southern Valley Floor", "latitude": 37.3253, "longitude": -119.3152},
     {"sensor_id": "SNS-006", "zone_id": "zone-b", "zone_name": "Southern Valley Floor", "latitude": 37.3015, "longitude": -119.2871},
-    # Zone C — Eastern Canyon
+    # Zone C: Eastern Canyon
     {"sensor_id": "SNS-007", "zone_id": "zone-c", "zone_name": "Eastern Canyon",        "latitude": 37.4213, "longitude": -119.1983},
     {"sensor_id": "SNS-008", "zone_id": "zone-c", "zone_name": "Eastern Canyon",        "latitude": 37.4352, "longitude": -119.2114},
     {"sensor_id": "SNS-009", "zone_id": "zone-c", "zone_name": "Eastern Canyon",        "latitude": 37.4091, "longitude": -119.1852},
-    # Zone D — Western Meadow
+    # Zone D: Western Meadow
     {"sensor_id": "SNS-010", "zone_id": "zone-d", "zone_name": "Western Meadow",        "latitude": 37.4481, "longitude": -119.6234},
     {"sensor_id": "SNS-011", "zone_id": "zone-d", "zone_name": "Western Meadow",        "latitude": 37.4614, "longitude": -119.6381},
     {"sensor_id": "SNS-012", "zone_id": "zone-d", "zone_name": "Western Meadow",        "latitude": 37.4371, "longitude": -119.6112},
@@ -81,21 +81,20 @@ def get_all_sensors() -> list[dict]:
 
 
 def generate_bulk_readings(
-    hours: int = 24,
+    start: datetime,
+    end: datetime,
     interval_seconds: int = 300,
     zone_id: str | None = None,
     fire_probability: float = 0.05,
 ) -> list[SensorReading]:
     sensors = [s for s in _SENSOR_CATALOG if zone_id is None or s["zone_id"] == zone_id]
-    now = datetime.now(timezone.utc)
-    start = now - timedelta(hours=hours)
 
     # Per-zone fire state; autocorrelated so events persist across intervals.
     zone_fire_state: dict[str, bool] = {z: False for z in _ZONES}
 
     readings: list[SensorReading] = []
     ts = start
-    while ts <= now:
+    while ts <= end:
         for zone in _ZONES:
             if zone_fire_state[zone]:
                 zone_fire_state[zone] = random.random() > 0.20  # 20% chance of ending
