@@ -1,4 +1,5 @@
 import asyncio
+import random
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
@@ -65,11 +66,18 @@ async def _event_stream():
     Yields SSE-formatted sensor readings continuously.
     - One reading per sensor per interval cycle.
     - Zone-level fire events are correlated within a cycle.
+    - Fire state carries forward between cycles (80% persistence) so events
+      last long enough to be observable on the dashboard.
     - A keepalive comment is sent every 3 cycles to prevent proxy timeouts.
     """
     tick = 0
+    zone_fire: dict[str, bool] = {z["zone_id"]: False for z in simulator.get_all_sensors()}
     while True:
-        zone_fire = simulator.sample_zone_fire_events(settings.wildfire_event_probability)
+        for zone_id in zone_fire:
+            if zone_fire[zone_id]:
+                zone_fire[zone_id] = random.random() > 0.20   # 80% carry-forward
+            else:
+                zone_fire[zone_id] = random.random() < settings.wildfire_event_probability
         now = datetime.now(timezone.utc)
         for sensor in simulator.get_all_sensors():
             reading = simulator.generate_reading(sensor, now, fire_event=zone_fire[sensor["zone_id"]])
